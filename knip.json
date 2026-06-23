@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/knip/schema.json",
   "exclude": ["duplicates"],
-  "ignore": ["critical_legacy.ts"],
+  "ignore": [],
   "ignoreDependencies": []
 }

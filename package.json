@@ -1,6 +1,6 @@
 {
-  "name": "vite-beasties-output",
-  "version": "0.1.0",
+  "name": "@unterberg/vite-beasties-output",
+  "version": "0.1.1",
   "description": "Post-build Beasties integration for Vite/Vike HTML output, with support for critical DaisyUI/Tailwind theme variables.",
   "type": "module",
   "sideEffects": false,
@@ -25,7 +25,8 @@
     "format": "biome format --write .",
     "prepare": "lefthook install",
     "verify": "pnpm knip && pnpm format && pnpm run lint && pnpm run typecheck && pnpm run test",
-    "prepublishOnly": "pnpm run verify && pnpm pack --dry-run"
+    "prepublishOnly": "pnpm run verify && pnpm pack --dry-run",
+    "deploy:npm": "node ./scripts/deploy.mjs"
   },
   "keywords": [
     "vite",
@@ -49,12 +50,12 @@
     "node": ">=22"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.11",
-    "@types/node": "latest",
-    "knip": "^6.0.13",
-    "lefthook": "^2.1.5",
+    "@biomejs/biome": "2.5.1",
+    "@types/node": "26.0.0",
+    "knip": "^6.18.0",
+    "lefthook": "^2.1.9",
     "tsup": "^8.5.1",
-    "vite": "latest",
-    "typescript": "^6.0.2"
+    "vite": "^8.1.0",
+    "typescript": "^6.0.3"
   }
 }
