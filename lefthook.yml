@@ -12,4 +12,4 @@ pre-commit:
     knip:
       glob: '*.{ts,tsx,cts,mts,js,jsx,cjs,mjs}'
       stage_fixed: true
-      run: pnpm run check:knip
+      run: pnpm knip

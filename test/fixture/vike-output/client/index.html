@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>fixture</title>
+    <link rel="stylesheet" href="/assets/app.css">
+  </head>
+  <body class="bg-base-100 text-base-content">
+    <div id="root" class="relative min-h-lvh">
+      <div class="page-portal relative z-2">
+        <div class="m-auto max-w-5xl px-4 lg:px-0 relative z-10">
+          <div class="absolute top-0 left-0 w-full h-auto justify-end gap-3 -mt-0.25 hidden lg:flex"></div>
+        </div>
+
+        <div class="min-h-[100dvh] flex flex-col justify-center overflow-x-hidden">
+          <div class="m-auto px-lg-0 flex flex-col justify-center relative max-w-xl mx-auto z-2 px-6 md:px-0">
+            <header class="pointer-events-none relative z-10 flex flex-col mx-auto">
+              <h1 class="pixi-deadzone text-grayDark font-mono mb-6 lg:mb-8 text-center text-xs lg:text-sm"></h1>
+              <p class="pixi-deadzone mx-auto text-4xl md:text-7xl font-bold relative text-center text-light mb-4 md:mb-10"></p>
+              <p class="text-2xl pixi-deadzone relative text-center text-gray font-normal inline-block"></p>
+            </header>
+          </div>
+
+          <section class="gsap-stagger-top pixi-hitbox lg:w-4/5 mx-auto lg:opacity-0">
+            <ul class="flex flex-wrap justify-center gap-2 mt-10">
+              <li class="bg-darkLight text-light px-3 py-1 rounded-full text-xs lg:text-sm whitespace-nowrap"></li>
+              <li class="bg-darkLight text-light px-3 py-1 rounded-full text-xs lg:text-sm whitespace-nowrap"></li>
+              <li class="bg-darkLight text-light px-3 py-1 rounded-full text-xs lg:text-sm whitespace-nowrap"></li>
+            </ul>
+          </section>
+
+          <section class="mt-16 grid grid-cols-1 lg:grid-cols-2 gap-10 max-w-4xl mx-auto px-6 md:px-0">
+            <a class="card bg-base-200 border border-base-300 rounded-xl px-6 py-5 text-base-content shadow-xl"></a>
+            <a class="card bg-base-200 border border-base-300 rounded-xl px-6 py-5 text-base-content shadow-xl"></a>
+          </section>
+
+          <section class="mt-10 mx-auto flex gap-3 flex-wrap justify-center lg:justify-start">
+            <button class="btn btn-primary"></button>
+            <button class="btn btn-ghost"></button>
+            <button class="btn btn-warning"></button>
+          </section>
+
+          <footer class="mt-40 mb-12 text-center text-xs text-gray"></footer>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,23 +1,60 @@
 {
   "name": "vite-beasties-output",
   "version": "0.1.0",
-  "description": "",
+  "description": "Post-build Beasties integration for Vite/Vike HTML output, with support for critical DaisyUI/Tailwind theme variables.",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsup src/index.ts --format esm --dts --clean --target node22",
+    "test": "pnpm run build && node --test test/*.test.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "biome lint --write .",
     "format": "biome format --write .",
     "prepare": "lefthook install",
-    "verify": "pnpm knip && pnpm format && pnpm run lint && pnpm run typecheck && pnpm run test"
+    "verify": "pnpm knip && pnpm format && pnpm run lint && pnpm run typecheck && pnpm run test",
+    "prepublishOnly": "pnpm run verify && pnpm pack --dry-run"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "vite",
+    "vite-plugin",
+    "vike",
+    "beasties",
+    "critical-css",
+    "ssr",
+    "ssg",
+    "tailwindcss",
+    "daisyui"
+  ],
   "license": "ISC",
+  "dependencies": {
+    "beasties": "latest"
+  },
+  "peerDependencies": {
+    "vite": ">=6"
+  },
+  "engines": {
+    "node": ">=22"
+  },
   "devDependencies": {
-    "tsup": "^8.5.1",
     "@biomejs/biome": "2.4.11",
+    "@types/node": "latest",
     "knip": "^6.0.13",
     "lefthook": "^2.1.5",
+    "tsup": "^8.5.1",
+    "vite": "latest",
     "typescript": "^6.0.2"
   }
 }
