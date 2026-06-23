@@ -1,6 +1,6 @@
 {
   "name": "@unterberg/vite-beasties-output",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Post-build Beasties integration for Vite/Vike HTML output, with support for critical DaisyUI/Tailwind theme variables.",
   "type": "module",
   "sideEffects": false,
@@ -18,7 +18,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --clean --target node22",
+    "build": "tsup src/index.ts --format esm --dts --clean --target node18",
     "test": "pnpm run build && node --test test/*.test.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "biome lint --write .",

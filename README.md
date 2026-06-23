@@ -20,7 +20,7 @@ Unlike generic Beasties integrations, this plugin is designed for SSR/SSG-style 
 ## Installation
 
 ```sh
-pnpm add -D vite-beasties-output
+pnpm add -D @unterberg/vite-beasties-output
 ```
 
 ## Usage
