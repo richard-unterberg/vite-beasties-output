@@ -35,18 +35,8 @@ export interface SafeBeastiesOptions {
 }
 
 export interface ViteBeastiesOutputOptions {
+  outputDirectory?: string
   beastiesOptions?: SafeBeastiesOptions
-}
-
-type EnvironmentAwarePluginContext = {
-  environment?: {
-    config?: {
-      consumer?: string
-      build?: {
-        outDir?: string
-      }
-    }
-  }
 }
 
 const DEFAULT_BEASTIES_OPTIONS: SafeBeastiesOptions = {
@@ -104,6 +94,12 @@ const removeUrlSuffix = (href: string) => {
 
 const normalizeBasePath = (base: string) => {
   return base.endsWith('/') ? base : `${base}/`
+}
+
+const resolveOutputDirectory = (config: ResolvedConfig, outputDirectory: string | undefined) => {
+  const directory = outputDirectory ?? config.build.outDir
+
+  return path.resolve(config.root, directory)
 }
 
 const collectStylesheetHrefs = (html: string) => {
@@ -237,15 +233,7 @@ export const viteBeastiesOutput = (pluginOptions: ViteBeastiesOutputOptions = {}
 
       const currentResolvedConfig = resolvedConfig
 
-      const environment = (this as unknown as EnvironmentAwarePluginContext).environment
-
-      if (environment?.config?.consumer && environment.config.consumer !== 'server') {
-        return
-      }
-
-      const serverOutDir = environment?.config?.build?.outDir ?? currentResolvedConfig.build.outDir
-      const serverOutputDirectory = path.resolve(currentResolvedConfig.root, serverOutDir)
-      const outputDirectory = path.join(path.dirname(serverOutputDirectory), 'client')
+      const outputDirectory = resolveOutputDirectory(currentResolvedConfig, pluginOptions.outputDirectory)
       const htmlFiles = await collectHtmlFiles(outputDirectory)
 
       if (htmlFiles.length === 0) {
