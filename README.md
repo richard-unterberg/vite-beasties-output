@@ -1,4 +1,4 @@
-# vite-beasties-output
+# @unterber/vite-beasties-output
 
 A small post-build Vite plugin that runs Beasties against already generated HTML output.
 
@@ -27,7 +27,7 @@ pnpm add -D @unterberg/vite-beasties-output
 
 ```ts
 import { defineConfig } from 'vite'
-import { viteBeastiesOutput } from 'vite-beasties-output'
+import { viteBeastiesOutput } from '@unterberg/vite-beasties-output'
 
 export default defineConfig({
   plugins: [
