@@ -1,0 +1,23 @@
+{
+  "name": "vite-beasties-output",
+  "version": "0.1.0",
+  "description": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "biome lint --write .",
+    "format": "biome format --write .",
+    "prepare": "lefthook install",
+    "verify": "pnpm knip && pnpm format && pnpm run lint && pnpm run typecheck && pnpm run test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "tsup": "^8.5.1",
+    "@biomejs/biome": "2.4.11",
+    "knip": "^6.0.13",
+    "lefthook": "^2.1.5",
+    "typescript": "^6.0.2"
+  }
+}
