@@ -43,7 +43,9 @@ export default defineConfig({
 })
 ```
 
-If `outputDirectory` is omitted, the plugin uses Vite's `build.outDir`.
+If `outputDirectory` is omitted, the plugin uses Vite's `build.outDir`. For Vike SSR/prerender builds, set
+`outputDirectory: 'dist/client'` explicitly because Vike's server build output is usually `dist/server`, while the
+HTML files are written to `dist/client`.
 
 ## Output directory
 
@@ -70,7 +72,8 @@ viteBeastiesOutput({
 })
 ```
 
-When omitted, this defaults to Vite's `build.outDir`.
+When omitted, this defaults to Vite's `build.outDir`. In Vike projects, this is often `dist/server` during the SSR
+build, so prerendered output usually needs `outputDirectory: 'dist/client'`.
 
 ### `beastiesOptions`
 

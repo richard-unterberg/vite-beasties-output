@@ -27,6 +27,8 @@
 
 ### Output Layout Assumption
 
+Output path: "dist/client" will result:
+
 ```
 dist/
 ├─ client/          ← Plugin scans here for *.html
@@ -36,8 +38,6 @@ dist/
 │     └─ *.css      ← Plugin reads referenced CSS from here
 └─ server/
 ```
-
-The plugin infers `dist/client` as a sibling to the server output directory. This is Vike-specific and not configurable in the first release.
 
 ## Key Files
 
@@ -49,14 +49,8 @@ The plugin infers `dist/client` as a sibling to the server output directory. Thi
 - `viteBeastiesOutputPlugin`: Alias for backward compat (may be removed in v1)
 - `ViteBeastiesOutputOptions`: User-facing plugin options interface (currently only `beastiesOptions`)
 - `SafeBeastiesOptions`: Curated Beasties options safe for passthrough (excludes path, publicPath, remote, etc.)
-- `CRITICAL_THEME_STYLE_MARKER`: `/* nivel-critical-theme-vars */` comment used to mark injected theme rules
+- `CRITICAL_THEME_STYLE_MARKER`: `/* vite-beasties-theme-vars */` comment used to mark injected theme rules
 - Helper functions: `collectHtmlFiles`, `collectStylesheetHrefs`, `extractCriticalThemeCss`, `injectCriticalThemeCss`
-
-**Lines 1–60**: Type definitions and defaults  
-**Lines 59–90**: Utility functions (error handling, file traversal)  
-**Lines 92–146**: Stylesheet discovery and path resolution  
-**Lines 148–221**: Critical theme extraction and injection logic  
-**Lines 223–282**: Plugin factory and closeBundle implementation  
 
 ### [test/smoke.test.mjs](test/smoke.test.mjs)
 
@@ -226,4 +220,4 @@ To add layout flexibility:
 - When expanding, consider the DaisyUI/Tailwind ecosystem (btn, card, base-* color naming)
 - Test changes against the fixture to ensure class names and theme variables remain visible
 - Use Node 22+ features freely (no polyfills needed)
-- Keep the marker comment stable (`nivel-critical-theme-vars`); it's part of the contract
+- Keep the marker comment stable (`vite-beasties-theme-vars`); it's part of the contract

@@ -1,6 +1,6 @@
 {
   "name": "@unterberg/vite-beasties-output",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Post-build Beasties integration for Vite/Vike HTML output, with support for critical DaisyUI/Tailwind theme variables.",
   "type": "module",
   "sideEffects": false,

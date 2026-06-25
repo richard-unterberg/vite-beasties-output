@@ -5,7 +5,7 @@ import type { Plugin, ResolvedConfig } from 'vite'
 
 const HTML_FILE_EXTENSION = '.html'
 const CSS_FILE_EXTENSION = '.css'
-const CRITICAL_THEME_STYLE_MARKER = '/* nivel-critical-theme-vars */'
+const CRITICAL_THEME_STYLE_MARKER = '/* vite-beasties-theme-vars */'
 
 type StylesheetCache = Map<string, string | undefined>
 
