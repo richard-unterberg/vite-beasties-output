@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "files": {
-    "includes": ["**", "./!test/fixture/**", "./!dist/**"]
+    "includes": ["**", "!dist"]
   },
   "formatter": {
     "indentWidth": 2,
@@ -16,19 +16,10 @@
     }
   },
   "linter": {
-    "enabled": true,
     "rules": {
-      "recommended": true,
-      "style": {
-        "useLiteralEnumMembers": "off"
-      },
-      "correctness": {
-        "noUnusedImports": "warn",
-        "noUnusedVariables": "warn",
-        "noUnusedFunctionParameters": "off"
-      },
+      "preset": "recommended",
       "security": {
-        "noDangerouslySetInnerHtml": "info"
+        "noDangerouslySetInnerHtml": "off"
       },
       "suspicious": {
         "noArrayIndexKey": "warn",
@@ -53,16 +44,5 @@
     "formatter": {
       "quoteStyle": "single"
     }
-  },
-  "overrides": [
-    {
-      "linter": {
-        "rules": {
-          "security": {
-            "noDangerouslySetInnerHtml": "off"
-          }
-        }
-      }
-    }
-  ]
+  }
 }
