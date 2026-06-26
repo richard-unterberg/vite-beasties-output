@@ -31,6 +31,23 @@ const runPlugin = async (pluginOptions, config) => {
   await plugin.closeBundle.call({})
 }
 
+const captureInfoLogs = async (callback) => {
+  const originalInfo = console.info
+  const logs = []
+
+  console.info = (...messages) => {
+    logs.push(messages.join(' '))
+  }
+
+  try {
+    await callback()
+  } finally {
+    console.info = originalInfo
+  }
+
+  return logs
+}
+
 test('processes an explicitly configured output directory', async () => {
   const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'vite-beasties-output-'))
   const outputDirectory = path.join(temporaryDirectory, 'dist')
@@ -77,4 +94,46 @@ test('defaults to the Vite build output directory', async () => {
   const processedHtml = await fs.readFile(htmlPath, 'utf8')
 
   assertProcessedHtml(processedHtml, sourceHtml)
+})
+
+test('logs processed HTML count unless Beasties logging is silent', async () => {
+  const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'vite-beasties-output-'))
+  const outputDirectory = path.join(temporaryDirectory, 'dist')
+
+  await fs.cp(fixtureDirectory, outputDirectory, { recursive: true })
+
+  const config = {
+    root: temporaryDirectory,
+    base: '/',
+    build: {
+      outDir: 'dist',
+    },
+  }
+
+  const logs = await captureInfoLogs(async () => {
+    await runPlugin({ outputDirectory: 'dist/client' }, config)
+  })
+
+  assert.deepEqual(logs, ['[vite-beasties-output] Processed 1 HTML file'])
+})
+
+test('does not log processed HTML count when Beasties logging is silent', async () => {
+  const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'vite-beasties-output-'))
+  const outputDirectory = path.join(temporaryDirectory, 'dist')
+
+  await fs.cp(fixtureDirectory, outputDirectory, { recursive: true })
+
+  const config = {
+    root: temporaryDirectory,
+    base: '/',
+    build: {
+      outDir: 'dist',
+    },
+  }
+
+  const logs = await captureInfoLogs(async () => {
+    await runPlugin({ outputDirectory: 'dist/client', beastiesOptions: { logLevel: 'silent' } }, config)
+  })
+
+  assert.deepEqual(logs, [])
 })

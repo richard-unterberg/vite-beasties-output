@@ -11,6 +11,7 @@ Unlike generic Beasties integrations, this plugin is designed for builds where H
 - Scans generated `.html` files from the configured output directory
 - Processes each HTML file with Beasties
 - Writes optimized HTML back to disk
+- Logs how many HTML files were processed, unless Beasties logging is `silent`
 
 ## How it differs from vite-plugin-beasties
 
@@ -104,6 +105,38 @@ The plugin ships with sensible defaults:
 }
 ```
 
+## DaisyUI and theme variables
+
+The plugin does not automatically parse or re-inject DaisyUI/Tailwind theme rules. Beasties runs after Tailwind and
+DaisyUI have generated the final CSS, so comments placed around `@plugin 'daisyui/theme'`, `@theme`, or
+`@custom-variant` directives may be removed before Beasties can see them.
+
+For DaisyUI theme variables, prefer Beasties' native `allowRules` option:
+
+```ts
+viteBeastiesOutput({
+  outputDirectory: 'dist/client',
+  beastiesOptions: {
+    allowRules: [
+      /data-theme=.*dark/,
+      /data-theme=.*light/,
+      /^:root:has\(input\.theme-controller/,
+      /^:where\(:root\)$/,
+    ],
+  },
+})
+```
+
+Beasties include comments are still useful for plain CSS rules, but only when those comments survive into the built CSS
+file that Beasties processes:
+
+```css
+/* beasties:include */
+.always-critical {
+  color: currentColor;
+}
+```
+
 ## How it works
 
 The plugin runs after your Vite build completes. It:
@@ -111,6 +144,7 @@ The plugin runs after your Vite build completes. It:
 1. Scans the configured output directory recursively for `.html` files
 2. For each HTML file, processes it through Beasties to extract and inline critical CSS
 3. Writes the optimized HTML back to disk
+4. Logs the number of HTML files processed when `beastiesOptions.logLevel` is not `silent`
 
 ## Limitations
 
@@ -122,14 +156,8 @@ The plugin runs after your Vite build completes. It:
 
 ### Expected rules are missing from critical CSS
 
-Use Beasties' native include mechanisms for rules that cannot be discovered from the generated HTML:
-
-```css
-/* beasties:include */
-.always-critical {
-  color: currentColor;
-}
-```
+Use Beasties' native include mechanisms for rules that cannot be discovered from the generated HTML. For DaisyUI or
+theme variables, see [DaisyUI and theme variables](#daisyui-and-theme-variables).
 
 ### Plugin not running
 

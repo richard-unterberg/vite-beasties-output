@@ -1,6 +1,6 @@
 {
   "name": "@unterberg/vite-beasties-output",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Post-build Beasties integration for Vite/Vike HTML output.",
   "type": "module",
   "sideEffects": false,

@@ -42,6 +42,14 @@ const DEFAULT_BEASTIES_OPTIONS: SafeBeastiesOptions = {
   logLevel: 'warn',
 }
 
+const shouldLogSummary = (logLevel: LogLevel | undefined) => {
+  return (logLevel ?? DEFAULT_BEASTIES_OPTIONS.logLevel) !== 'silent'
+}
+
+const pluralizeFiles = (fileCount: number) => {
+  return fileCount === 1 ? 'file' : 'files'
+}
+
 const isNodeError = (error: unknown): error is Error & { code?: string } => {
   return error instanceof Error && 'code' in error
 }
@@ -100,8 +108,13 @@ export const viteBeastiesOutput = (pluginOptions: ViteBeastiesOutputOptions = {}
 
       const outputDirectory = resolveOutputDirectory(currentResolvedConfig, pluginOptions.outputDirectory)
       const htmlFiles = await collectHtmlFiles(outputDirectory)
+      const logLevel = pluginOptions.beastiesOptions?.logLevel ?? DEFAULT_BEASTIES_OPTIONS.logLevel
 
       if (htmlFiles.length === 0) {
+        if (shouldLogSummary(logLevel)) {
+          console.info('[vite-beasties-output] Processed 0 HTML files')
+        }
+
         return
       }
 
@@ -122,6 +135,10 @@ export const viteBeastiesOutput = (pluginOptions: ViteBeastiesOutputOptions = {}
           }
         }),
       )
+
+      if (shouldLogSummary(logLevel)) {
+        console.info(`[vite-beasties-output] Processed ${htmlFiles.length} HTML ${pluralizeFiles(htmlFiles.length)}`)
+      }
     },
   }
 }
