@@ -4,7 +4,7 @@ Post-build vite plugin that runs [beasties](https://github.com/danielroe/beastie
 
 Small post-build adapter around Beasties. It focuses on processing emitted HTML files on disk rather than participating in Vite’s in-pipeline HTML transformation. That makes it suitable for SSR/SSG/prerender setups where the final HTML is already written to disk, such as Vike.
 
-## Positioning
+## How it differs from vite-plugin-beasties
 
 `@unterberg/vite-beasties-output` is not intended to replace the official [`vite-plugin-beasties`](https://www.npmjs.com/package/vite-plugin-beasties).
 
@@ -33,10 +33,6 @@ Use `vite-plugin-beasties` for regular Vite projects where HTML is processed thr
 - Processes each HTML file with Beasties
 - Writes optimized HTML back to disk
 - Logs how many HTML files were processed, unless Beasties logging is `silent`
-
-## How it differs from vite-plugin-beasties
-
-`vite-beasties-output` is intentionally opinionated for output-directory post-processing in SSR/SSG style projects. It is not a replacement for a generic in-pipeline Beasties plugin.
 
 ## Installation
 
@@ -186,3 +182,9 @@ Verify:
 - You're running `pnpm build` (not dev mode)
 - Your Vite config has the plugin in the `plugins` array
 - `outputDirectory` points at the generated HTML output root, or your HTML files are in Vite's `build.outDir`
+
+## Critical CSS matters
+
+SSR and SSG applications can produce clean, route-specific HTML output that is ready to render immediately. Critical CSS keeps that advantage intact by inlining only the styles needed for the initial viewport, allowing the browser to paint meaningful content before loading the full stylesheet.
+
+This reduces render-blocking CSS, improves perceived performance, and helps keep fast static or server-rendered output truly fast.
