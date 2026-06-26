@@ -15,6 +15,8 @@ That makes it suitable for SSG, prerendered, or otherwise statically emitted HTM
 * Writes optimized HTML back to disk
 * Logs how many HTML files were processed, unless Beasties logging is `silent`
 
+Beasties may add `data-beasties-container` to the top-level `<html>` tag while processing. The plugin removes that marker from final output to avoid leaking optimization-only attributes into hydrated documents. Custom Beasties containers inside the document are preserved.
+
 ## Installation
 
 ```sh
@@ -39,6 +41,8 @@ export default defineConfig({
 For Vike prerender builds, `dist/client` is usually the relevant output directory because prerendered HTML files are written there.
 
 For SSR-only Vike builds without prerendering, the server output usually contains runtime modules such as `page_*.mjs` files instead of final `.html` files. This plugin does not modify those runtime SSR modules and therefore cannot inline critical CSS into SSR responses by itself.
+
+Vike full builds can invoke Vite more than once. In that case, you may see an early `Processed 0 HTML files` message during the client build before Vike has prerendered any HTML, followed by a later message after the prerendered HTML files exist.
 
 If `outputDirectory` is omitted, the plugin uses Vite's `build.outDir`.
 
@@ -194,6 +198,8 @@ Verify:
 * Your Vite config has the plugin in the `plugins` array
 * `outputDirectory` points at the generated HTML output root
 * Your build actually emits `.html` files
+
+For Vike prerender builds, an early `Processed 0 HTML files` log can be normal because Vike writes prerendered HTML after the first Vite build phase. Check the final log message and the generated `dist/client/**/*.html` files.
 
 ### Processed 0 HTML files
 

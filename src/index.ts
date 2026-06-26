@@ -89,6 +89,10 @@ const resolveOutputDirectory = (config: ResolvedConfig, outputDirectory: string 
   return path.resolve(config.root, directory)
 }
 
+const removeHtmlBeastiesContainerAttribute = (html: string) => {
+  return html.replace(/(<html\b[^>]*)\sdata-beasties-container(?=[\s>])/i, '$1')
+}
+
 export const viteBeastiesOutput = (pluginOptions: ViteBeastiesOutputOptions = {}): Plugin => {
   let resolvedConfig: ResolvedConfig | undefined
 
@@ -128,7 +132,7 @@ export const viteBeastiesOutput = (pluginOptions: ViteBeastiesOutputOptions = {}
       await Promise.all(
         htmlFiles.map(async (htmlFile) => {
           const html = await fs.readFile(htmlFile, 'utf8')
-          const processedHtml = await beasties.process(html)
+          const processedHtml = removeHtmlBeastiesContainerAttribute(await beasties.process(html))
 
           if (processedHtml !== html) {
             await fs.writeFile(htmlFile, processedHtml)

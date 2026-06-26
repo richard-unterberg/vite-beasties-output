@@ -20,6 +20,7 @@ const assertProcessedHtml = (processedHtml, sourceHtml) => {
   assert.match(processedHtml, /--color-base-100/)
   assert.match(processedHtml, /class="btn btn-primary"/)
   assert.match(processedHtml, /class="card bg-base-200 border border-base-300/)
+  assert.doesNotMatch(processedHtml, /<html[^>]*\sdata-beasties-container(?:\s|>)/i)
   assert.doesNotMatch(processedHtml, /unterberg\.dev|modulepreload|entry-client-routing/)
   assert.doesNotMatch(processedHtml, /vite-beasties-theme-vars/)
 }
@@ -136,4 +137,35 @@ test('does not log processed HTML count when Beasties logging is silent', async 
   })
 
   assert.deepEqual(logs, [])
+})
+
+test('removes Beasties container marker from html while preserving custom containers', async () => {
+  const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'vite-beasties-output-'))
+  const outputDirectory = path.join(temporaryDirectory, 'dist')
+
+  await fs.cp(path.join(fixtureDirectory, 'client'), outputDirectory, { recursive: true })
+
+  const htmlPath = path.join(outputDirectory, 'index.html')
+  const sourceHtml = await fs.readFile(htmlPath, 'utf8')
+  await fs.writeFile(
+    htmlPath,
+    sourceHtml
+      .replace('<html lang="en">', '<html lang="en" data-beasties-container>')
+      .replace('<div id="root"', '<div data-beasties-container id="root"'),
+  )
+
+  const config = {
+    root: temporaryDirectory,
+    base: '/',
+    build: {
+      outDir: 'dist',
+    },
+  }
+
+  await runPlugin(undefined, config)
+
+  const processedHtml = await fs.readFile(htmlPath, 'utf8')
+
+  assert.doesNotMatch(processedHtml, /<html[^>]*\sdata-beasties-container(?:\s|>)/i)
+  assert.match(processedHtml, /<div data-beasties-container id="root"/)
 })
