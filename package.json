@@ -1,7 +1,7 @@
 {
   "name": "@unterberg/vite-beasties-output",
-  "version": "0.1.4",
-  "description": "Post-build Beasties integration for Vite/Vike HTML output, with support for critical DaisyUI/Tailwind theme variables.",
+  "version": "0.1.5",
+  "description": "Post-build Beasties integration for Vite/Vike HTML output.",
   "type": "module",
   "sideEffects": false,
   "files": [
@@ -35,9 +35,7 @@
     "beasties",
     "critical-css",
     "ssr",
-    "ssg",
-    "tailwindcss",
-    "daisyui"
+    "ssg"
   ],
   "license": "ISC",
   "dependencies": {

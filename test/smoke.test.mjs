@@ -17,12 +17,11 @@ const assertUnprocessedFixtureHtml = (sourceHtml) => {
 
 const assertProcessedHtml = (processedHtml, sourceHtml) => {
   assert.notEqual(processedHtml, sourceHtml)
-  assert.match(processedHtml, /vite-beasties-theme-vars/)
   assert.match(processedHtml, /--color-base-100/)
   assert.match(processedHtml, /class="btn btn-primary"/)
   assert.match(processedHtml, /class="card bg-base-200 border border-base-300/)
   assert.doesNotMatch(processedHtml, /unterberg\.dev|modulepreload|entry-client-routing/)
-  assert.equal(processedHtml.match(/vite-beasties-theme-vars/g)?.length, 1)
+  assert.doesNotMatch(processedHtml, /vite-beasties-theme-vars/)
 }
 
 const runPlugin = async (pluginOptions, config) => {

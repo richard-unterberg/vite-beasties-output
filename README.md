@@ -2,7 +2,7 @@
 
 A small post-build Vite plugin that runs Beasties against already generated HTML output.
 
-Unlike generic Beasties integrations, this plugin is designed for builds where HTML files already exist in an output directory. It processes those files after bundling and adds a small compatibility layer for DaisyUI/Tailwind theme variables that are required by critical CSS but may not be picked up by Beasties automatically.
+Unlike generic Beasties integrations, this plugin is designed for builds where HTML files already exist in an output directory. It processes those files after bundling, which fits SSR/SSG output layouts where Vite has already emitted the final HTML and assets.
 
 ## What it does
 
@@ -10,7 +10,6 @@ Unlike generic Beasties integrations, this plugin is designed for builds where H
 - Runs late with `enforce: 'post'`
 - Scans generated `.html` files from the configured output directory
 - Processes each HTML file with Beasties
-- Re-injects critical DaisyUI/Tailwind theme variables when needed
 - Writes optimized HTML back to disk
 
 ## How it differs from vite-plugin-beasties
@@ -49,7 +48,7 @@ HTML files are written to `dist/client`.
 
 ## Output directory
 
-Point `outputDirectory` at the directory that contains the generated HTML files you want to process. The plugin scans that directory recursively for `.html` files and resolves local linked stylesheets from the same output root.
+Point `outputDirectory` at the directory that contains the generated HTML files you want to process. The plugin scans that directory recursively for `.html` files and lets Beasties resolve linked stylesheets from that output root.
 
 ```txt
 dist/client/
@@ -111,28 +110,24 @@ The plugin runs after your Vite build completes. It:
 
 1. Scans the configured output directory recursively for `.html` files
 2. For each HTML file, processes it through Beasties to extract and inline critical CSS
-3. Detects DaisyUI/Tailwind-style theme variables (color-scheme, --color-base-100) in referenced stylesheets
-4. Re-injects those theme variables with a marker comment so they survive critical CSS extraction
-5. Writes the optimized HTML back to disk
+3. Writes the optimized HTML back to disk
 
 ## Limitations
 
 - **Output root must match public paths**: Absolute stylesheet URLs are resolved from `outputDirectory`, using Vite's configured `base`.
 - **Beasties path control**: Beasties `path` and `publicPath` are controlled by the plugin based on `outputDirectory` and Vite's resolved config.
-- **Local stylesheets only**: The plugin processes only `.css` files found on disk in the output directory. Remote stylesheets are not supported.
-- **DaisyUI/Tailwind opinionated**: Theme variable detection is specific to Tailwind/DaisyUI color schemes; other custom theme systems may need adjustment.
+- **Beasties owns CSS selection**: The plugin does not add extra CSS parsing or framework-specific rule preservation. Use Beasties options such as `allowRules` or CSS comments like `/* beasties:include */` when a project needs explicit rule inclusion.
 
 ## Troubleshooting
 
-### Theme variables not being injected
+### Expected rules are missing from critical CSS
 
-Ensure your CSS contains both `color-scheme:` and `--color-base-100` in the same rule block:
+Use Beasties' native include mechanisms for rules that cannot be discovered from the generated HTML:
 
 ```css
-:root {
-  color-scheme: light;
-  --color-base-100: #ffffff;
-  /* other theme variables */
+/* beasties:include */
+.always-critical {
+  color: currentColor;
 }
 ```
 

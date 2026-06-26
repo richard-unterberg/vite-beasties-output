@@ -2,11 +2,11 @@
 
 ## Project Overview
 
-**vite-beasties-output** is a small, opinionated Vite post-build plugin that processes generated HTML output through Beasties to extract and inline critical CSS, with special handling for DaisyUI/Tailwind theme variables.
+**vite-beasties-output** is a small, opinionated Vite post-build plugin that processes generated HTML output through Beasties to extract and inline critical CSS.
 
 **Target users**: Developers building SSR/SSG sites (especially with Vike) who want critical CSS inlining without adopting a generic Beasties pipeline plugin.
 
-**Version**: 0.1.0 (intentionally minimal first release)  
+**Version**: 0.1.4 (intentionally minimal early release)  
 **Node baseline**: >=22  
 **Package type**: ESM only  
 
@@ -16,18 +16,15 @@
 
 1. **configResolved**: Stores resolved Vite config for later use
 2. **closeBundle**: Runs after all assets are built (Vite's post-build hook)
-   - Checks environment context (must be server consumer in Vike)
-   - Scans `dist/client` recursively for `.html` files
+   - Resolves the configured output directory, defaulting to Vite's `build.outDir`
+   - Scans the output directory recursively for `.html` files
    - For each HTML file:
-     - Reads stylesheet hrefs and attempts to resolve local CSS files
-     - Extracts critical DaisyUI/Tailwind theme rules (color-scheme + --color-base-100)
      - Processes HTML through Beasties with user-provided options merged with defaults
-     - Re-injects theme rules if they exist, prefixed with marker comment
      - Writes modified HTML back to disk
 
 ### Output Layout Assumption
 
-Output path: "dist/client" will result:
+Recommended Vike output path: "dist/client" will result:
 
 ```
 dist/
@@ -35,7 +32,7 @@ dist/
 │  ├─ index.html
 │  ├─ [subroutes].html
 │  └─ assets/
-│     └─ *.css      ← Plugin reads referenced CSS from here
+│     └─ *.css      ← Beasties resolves linked CSS from here
 └─ server/
 ```
 
@@ -47,10 +44,9 @@ dist/
 
 - `viteBeastiesOutput`: Factory function returning the Vite Plugin object
 - `viteBeastiesOutputPlugin`: Alias for backward compat (may be removed in v1)
-- `ViteBeastiesOutputOptions`: User-facing plugin options interface (currently only `beastiesOptions`)
+- `ViteBeastiesOutputOptions`: User-facing plugin options interface (`outputDirectory`, `beastiesOptions`)
 - `SafeBeastiesOptions`: Curated Beasties options safe for passthrough (excludes path, publicPath, remote, etc.)
-- `CRITICAL_THEME_STYLE_MARKER`: `/* vite-beasties-theme-vars */` comment used to mark injected theme rules
-- Helper functions: `collectHtmlFiles`, `collectStylesheetHrefs`, `extractCriticalThemeCss`, `injectCriticalThemeCss`
+- Helper functions: `collectHtmlFiles`, `resolveOutputDirectory`
 
 ### [test/smoke.test.mjs](test/smoke.test.mjs)
 
@@ -58,14 +54,14 @@ Node built-in test runner. Single test verifies:
 - Fixture HTML is clean (no production noise)
 - Local stylesheet is referenced and processed
 - Beasties processes HTML (output differs from input)
-- Theme marker is injected exactly once
-- DaisyUI/Tailwind class hooks remain preserved
+- No framework-specific theme marker is injected
+- Fixture class hooks remain preserved
 
 ### [test/fixture/vike-output/](test/fixture/vike-output/)
 
 Minimal but realistic test fixture:
 - `client/index.html`: Clean class-only DOM with no text content (points to local CSS)
-- `client/assets/app.css`: Theme variables (color-scheme, --color-base-100) + utility/component classes
+- `client/assets/app.css`: Theme variables + utility/component classes
 - `server/`: Empty directory (part of assumed layout)
 
 ### [package.json](package.json)
@@ -120,25 +116,20 @@ Git pre-commit hooks (managed by pnpm prepare).
 
 ✅ Runs post-build, finds all HTML in client output  
 ✅ Processes each HTML through Beasties for critical CSS extraction  
-✅ Re-injects DaisyUI/Tailwind theme variables (color-scheme, --color-base-100)  
 ✅ Respects user Beasties options (preload, compress, logLevel, etc.)  
-✅ Stores theme CSS in local cache to avoid re-reading files  
 ✅ Recursive HTML file discovery (handles nested routes)  
 
 ### Intentional Limitations (First Release)
 
 ❌ No `path` or `publicPath` configuration (plugin owns these)  
 ❌ No remote stylesheet fetching  
-❌ No additional stylesheet resolution beyond local file paths  
-❌ No custom theme rule patterns (hardcoded to DaisyUI/Tailwind)  
+❌ No framework-specific CSS parsing or rule preservation  
 ❌ Not a replacement for generic `vite-plugin-beasties`  
 
 ### Known Constraints
 
-- **Vike-specific layout**: Only works with server/client sibling directories
-- **Environment check**: Plugin returns early unless `environment.config.consumer === 'server'` (Vike-only hook)
-- **Theme detection**: Requires both `color-scheme:` and `--color-base-100` in the same CSS rule to extract
-- **Marker uniqueness**: Assumes only one theme marker per HTML file; multiple markers would not be re-injected
+- **Output directory required for Vike**: Vike SSR/prerender builds usually need `outputDirectory: 'dist/client'`
+- **Beasties-owned rule selection**: Use Beasties `allowRules` or `/* beasties:include */` comments for explicit CSS inclusion
 
 ## Development Workflow
 
@@ -172,33 +163,10 @@ npm publish --access public     # Publish (when ready)
 
 1. Add field to `SafeBeastiesOptions` if exposing a Beasties option
 2. Update `ViteBeastiesOutputOptions` if adding a top-level plugin option
-3. Merge user options into Beasties constructor (see lines 255–260 in src/index.ts)
+3. Merge user options into Beasties constructor
 4. Update README with new option docs
 
-### Customizing Theme Variable Detection
-
-Currently hardcoded in `extractCriticalThemeCss()` (lines 148–164):
-
-```ts
-if (!selector || !body.includes('color-scheme:') || !body.includes('--color-base-100')) {
-  continue
-}
-```
-
-To support custom theme patterns:
-- Accept a regex or pattern function in `SafeBeastiesOptions`
-- Pass it to `extractCriticalThemeCss()` instead of hardcoded check
-- Update tests and README
-
 ### Supporting Different Output Layouts
-
-Currently hardcoded path resolution in `closeBundle()` (lines 246–248):
-
-```ts
-const serverOutDir = environment?.config?.build?.outDir ?? currentResolvedConfig.build.outDir
-const serverOutputDirectory = path.resolve(currentResolvedConfig.root, serverOutDir)
-const outputDirectory = path.join(path.dirname(serverOutputDirectory), 'client')
-```
 
 To add layout flexibility:
 - Accept `outputLayout` or similar in options
@@ -207,17 +175,14 @@ To add layout flexibility:
 
 ## Debugging Tips
 
-- **Plugin not running**: Check `environment.config.consumer` is 'server' in Vike context
-- **Theme rules not extracted**: Verify CSS has both `color-scheme:` and `--color-base-100` in same rule
-- **Stylesheet not found**: Check href in HTML matches actual file path in dist/client
-- **Marker appearing multiple times**: Indicates either closeBundle ran twice or pre-existing marker in HTML
+- **Plugin not running**: Verify Vite is running a production build and the plugin is in the `plugins` array
+- **No HTML processed**: Check `outputDirectory` points at the directory containing generated `.html` files
+- **Expected CSS not inlined**: Use Beasties `allowRules` or CSS include comments for rules Beasties cannot infer from HTML
 
 ## Notes for AI Agents
 
 - Prefer minimal, opinionated solutions over configurability (follow v0.1.0 philosophy)
-- Do not add configurable theme patterns or layout resolvers without strong real-world evidence
+- Do not add framework-specific CSS parsing or layout resolvers without strong real-world evidence
 - Keep Beasties option passthrough simple; don't try to preset values the user might want to override
-- When expanding, consider the DaisyUI/Tailwind ecosystem (btn, card, base-* color naming)
-- Test changes against the fixture to ensure class names and theme variables remain visible
+- Test changes against the fixture to ensure class names and expected critical CSS remain visible
 - Use Node 22+ features freely (no polyfills needed)
-- Keep the marker comment stable (`vite-beasties-theme-vars`); it's part of the contract
