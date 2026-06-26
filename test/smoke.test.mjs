@@ -97,6 +97,62 @@ test('defaults to the Vite build output directory', async () => {
   assertProcessedHtml(processedHtml, sourceHtml)
 })
 
+test('processes only explicitly included HTML files', async () => {
+  const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'vite-beasties-output-'))
+  const outputDirectory = path.join(temporaryDirectory, 'dist')
+  const nestedDirectory = path.join(outputDirectory, 'client/nested')
+
+  await fs.cp(fixtureDirectory, outputDirectory, { recursive: true })
+  await fs.mkdir(nestedDirectory, { recursive: true })
+  await fs.copyFile(path.join(fixtureDirectory, 'client/index.html'), path.join(nestedDirectory, 'page.html'))
+
+  const sourceHtml = await fs.readFile(path.join(fixtureDirectory, 'client/index.html'), 'utf8')
+  assertUnprocessedFixtureHtml(sourceHtml)
+  const config = {
+    root: temporaryDirectory,
+    base: '/',
+    build: {
+      outDir: 'dist',
+    },
+  }
+
+  await runPlugin({ include: 'dist/client/index.html' }, config)
+
+  const processedHtml = await fs.readFile(path.join(outputDirectory, 'client/index.html'), 'utf8')
+  const skippedHtml = await fs.readFile(path.join(nestedDirectory, 'page.html'), 'utf8')
+
+  assertProcessedHtml(processedHtml, sourceHtml)
+  assert.equal(skippedHtml, sourceHtml)
+})
+
+test('processes HTML files matched by include globs', async () => {
+  const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'vite-beasties-output-'))
+  const outputDirectory = path.join(temporaryDirectory, 'dist')
+  const nestedDirectory = path.join(outputDirectory, 'client/nested')
+
+  await fs.cp(fixtureDirectory, outputDirectory, { recursive: true })
+  await fs.mkdir(nestedDirectory, { recursive: true })
+  await fs.copyFile(path.join(fixtureDirectory, 'client/index.html'), path.join(nestedDirectory, 'page.html'))
+
+  const sourceHtml = await fs.readFile(path.join(fixtureDirectory, 'client/index.html'), 'utf8')
+  assertUnprocessedFixtureHtml(sourceHtml)
+  const config = {
+    root: temporaryDirectory,
+    base: '/',
+    build: {
+      outDir: 'dist',
+    },
+  }
+
+  await runPlugin({ include: 'dist/client/**/*.html' }, config)
+
+  const processedRootHtml = await fs.readFile(path.join(outputDirectory, 'client/index.html'), 'utf8')
+  const processedNestedHtml = await fs.readFile(path.join(nestedDirectory, 'page.html'), 'utf8')
+
+  assertProcessedHtml(processedRootHtml, sourceHtml)
+  assertProcessedHtml(processedNestedHtml, sourceHtml)
+})
+
 test('logs processed HTML count unless Beasties logging is silent', async () => {
   const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'vite-beasties-output-'))
   const outputDirectory = path.join(temporaryDirectory, 'dist')
@@ -168,4 +224,37 @@ test('removes Beasties container marker from html while preserving custom contai
 
   assert.doesNotMatch(processedHtml, /<html[^>]*\sdata-beasties-container(?:\s|>)/i)
   assert.match(processedHtml, /<div data-beasties-container id="root"/)
+})
+
+test('preserves inline body styles by default', async () => {
+  const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'vite-beasties-output-'))
+  const outputDirectory = path.join(temporaryDirectory, 'dist')
+
+  await fs.cp(path.join(fixtureDirectory, 'client'), outputDirectory, { recursive: true })
+
+  const htmlPath = path.join(outputDirectory, 'index.html')
+  const sourceHtml = await fs.readFile(htmlPath, 'utf8')
+  await fs.writeFile(
+    htmlPath,
+    sourceHtml.replace(
+      '<div id="root" class="relative min-h-lvh">',
+      '<div id="root" class="relative min-h-lvh"><style>.hydration-owned-style{color:rebeccapurple}</style>',
+    ),
+  )
+
+  const config = {
+    root: temporaryDirectory,
+    base: '/',
+    build: {
+      outDir: 'dist',
+    },
+  }
+
+  await runPlugin(undefined, config)
+
+  const processedHtml = await fs.readFile(htmlPath, 'utf8')
+  const processedBody = processedHtml.match(/<body[\s\S]*<\/body>/i)?.[0] ?? ''
+
+  assert.match(processedHtml, /--color-base-100/)
+  assert.match(processedBody, /<style>\.hydration-owned-style\{color:rebeccapurple\}<\/style>/)
 })

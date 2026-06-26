@@ -10,7 +10,7 @@ That makes it suitable for SSG, prerendered, or otherwise statically emitted HTM
 
 * Runs only during `build`
 * Runs late with `enforce: 'post'`
-* Scans generated `.html` files from the configured output directory
+* Scans generated `.html` files from the configured output directory, or processes explicit `include` paths/globs
 * Processes each HTML file with Beasties
 * Writes optimized HTML back to disk
 * Logs how many HTML files were processed, unless Beasties logging is `silent`
@@ -39,6 +39,14 @@ export default defineConfig({
 ```
 
 For Vike prerender builds, `dist/client` is usually the relevant output directory because prerendered HTML files are written there.
+
+You can also process specific generated HTML files instead of scanning the whole output directory:
+
+```ts
+viteBeastiesOutput({
+  include: ['dist/client/index.html', 'dist/client/docs/**/*.html'],
+})
+```
 
 For SSR-only Vike builds without prerendering, the server output usually contains runtime modules such as `page_*.mjs` files instead of final `.html` files. This plugin does not modify those runtime SSR modules and therefore cannot inline critical CSS into SSR responses by itself.
 
@@ -75,6 +83,24 @@ When omitted, this defaults to Vite's `build.outDir`.
 
 In Vike prerender projects, this is often not enough because the build may involve separate client and server output directories. In that case, point `outputDirectory` directly at the directory containing the generated `.html` files, usually `dist/client`.
 
+### `include`
+
+Specific HTML files or glob patterns to process instead of scanning the output directory. Relative paths are resolved from Vite's project root. Supported glob tokens are `*`, `**`, and `?`.
+
+```ts
+viteBeastiesOutput({
+  include: 'dist/client/index.html',
+})
+```
+
+```ts
+viteBeastiesOutput({
+  include: ['dist/client/index.html', 'dist/client/docs/**/*.html'],
+})
+```
+
+When `include` is set, the plugin only processes matched `.html` files. If `outputDirectory` is also set, Beasties resolves linked CSS from that directory. If `outputDirectory` is omitted, the plugin infers the Beasties root from the include path or glob base.
+
 ### `beastiesOptions`
 
 Pass supported [Beasties options](https://github.com/danielroe/beasties#options). The plugin controls `path` and `publicPath` internally based on `outputDirectory` and Vite's resolved `base`.
@@ -86,6 +112,7 @@ viteBeastiesOutput({
     compress: true,         // Compress critical CSS
     logLevel: 'warn',       // 'info' | 'warn' | 'error' | 'trace' | 'debug' | 'silent'
     pruneSource: false,     // Do not remove source CSS files
+    reduceInlineStyles: false, // Preserve inline <style> tags rendered by the app/framework
     inlineFonts: false,     // Do not inline @font-face rules
     keyframes: 'critical',  // 'critical' | 'all' | 'none'
   },
@@ -100,6 +127,7 @@ The plugin ships with sensible defaults:
 {
   preload: 'swap',
   pruneSource: false,
+  reduceInlineStyles: false,
   compress: true,
   logLevel: 'warn',
 }
@@ -171,7 +199,7 @@ Supporting runtime SSR critical CSS would require integrating Beasties, or preco
 
 The plugin runs after your Vite build completes. It:
 
-1. Scans the configured output directory recursively for `.html` files
+1. Finds HTML files from `include`, or scans the configured output directory recursively for `.html` files
 2. For each HTML file, processes it through Beasties to extract and inline critical CSS
 3. Writes the optimized HTML back to disk
 4. Logs the number of HTML files processed when `beastiesOptions.logLevel` is not `silent`
@@ -180,8 +208,9 @@ The plugin runs after your Vite build completes. It:
 
 * **Static HTML only**: The plugin only processes `.html` files that exist on disk after the build.
 * **No direct runtime SSR injection**: SSR responses rendered at request time are not modified.
-* **Output root must match public paths**: Absolute stylesheet URLs are resolved from `outputDirectory`, using Vite's configured `base`.
+* **Output root must match public paths**: Absolute stylesheet URLs are resolved from `outputDirectory`, or from the inferred `include` base when `outputDirectory` is omitted, using Vite's configured `base`.
 * **Beasties path control**: Beasties `path` and `publicPath` are controlled by the plugin based on `outputDirectory` and Vite's resolved config.
+* **Inline style preservation**: Existing inline `<style>` tags are preserved by default to avoid mutating framework-rendered HTML before hydration. Set `beastiesOptions.reduceInlineStyles: true` if you explicitly want Beasties to process and merge inline styles.
 * **Beasties owns CSS selection**: The plugin does not add extra CSS parsing or framework-specific rule preservation. Use Beasties options such as `allowRules` or CSS comments like `/* beasties:include */` when a project needs explicit rule inclusion.
 
 ## Troubleshooting
