@@ -281,7 +281,7 @@ test('removes Beasties container marker from html while preserving custom contai
   assert.match(processedHtml, /<div data-beasties-container id="root"/)
 })
 
-test('inlines critical CSS from multiple Beasties containers', async () => {
+test('inlines critical CSS from multiple Beasties containers and user allow rules', async () => {
   const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'vite-beasties-output-'))
   const outputDirectory = path.join(temporaryDirectory, 'dist')
   const assetsDirectory = path.join(outputDirectory, 'assets')
@@ -337,7 +337,14 @@ test('inlines critical CSS from multiple Beasties containers', async () => {
     },
   }
 
-  await runPlugin(undefined, config)
+  await runPlugin(
+    {
+      beastiesOptions: {
+        allowRules: [/^:where\(\.space-x-4/],
+      },
+    },
+    config,
+  )
 
   const processedHtml = await fs.readFile(path.join(outputDirectory, 'index.html'), 'utf8')
 

@@ -46,8 +46,6 @@ const DEFAULT_BEASTIES_OPTIONS: SafeBeastiesOptions = {
   logLevel: 'warn',
 }
 
-const DEFAULT_ALLOW_RULES: Array<string | RegExp> = [/^:where\(\.(?:[^ >+~)]*\\:)*-?space-[xy]-/]
-
 const shouldLogSummary = (logLevel: LogLevel | undefined) => {
   return (logLevel ?? DEFAULT_BEASTIES_OPTIONS.logLevel) !== 'silent'
 }
@@ -344,7 +342,6 @@ export const viteBeastiesOutput = (pluginOptions: ViteBeastiesOutputOptions = {}
       const beasties = new Beasties({
         ...DEFAULT_BEASTIES_OPTIONS,
         ...pluginOptions.beastiesOptions,
-        allowRules: [...DEFAULT_ALLOW_RULES, ...(pluginOptions.beastiesOptions?.allowRules ?? [])],
         path: beastiesPath,
         publicPath: currentResolvedConfig.base,
       } as unknown as ConstructorParameters<typeof Beasties>[0])
