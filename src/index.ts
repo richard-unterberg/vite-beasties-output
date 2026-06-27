@@ -34,6 +34,7 @@ export interface SafeBeastiesOptions {
 export interface ViteBeastiesOutputOptions {
   outputDirectory?: string
   include?: string | string[]
+  explicitContainersOnly?: boolean
   beastiesOptions?: SafeBeastiesOptions
 }
 
@@ -348,11 +349,16 @@ export const viteBeastiesOutput = (pluginOptions: ViteBeastiesOutputOptions = {}
         publicPath: currentResolvedConfig.base,
       } as unknown as ConstructorParameters<typeof Beasties>[0])
 
-      await Promise.all(
+      const processedFiles = await Promise.all(
         htmlFiles.map(async (htmlFile) => {
           const html = await fs.readFile(htmlFile, 'utf8')
-          const shouldPromoteBodyContainer =
-            countBeastiesContainerAttributes(html) > 1 && !BODY_BEASTIES_CONTAINER_PATTERN.test(html)
+          const beastiesContainerCount = countBeastiesContainerAttributes(html)
+
+          if (pluginOptions.explicitContainersOnly && beastiesContainerCount === 0) {
+            return false
+          }
+
+          const shouldPromoteBodyContainer = beastiesContainerCount > 1 && !BODY_BEASTIES_CONTAINER_PATTERN.test(html)
           const htmlForBeasties = shouldPromoteBodyContainer ? ensureSingleBeastiesContainerRoot(html) : html
           const processedHtml = removeHtmlBeastiesContainerAttribute(
             shouldPromoteBodyContainer
@@ -363,11 +369,16 @@ export const viteBeastiesOutput = (pluginOptions: ViteBeastiesOutputOptions = {}
           if (processedHtml !== html) {
             await fs.writeFile(htmlFile, processedHtml)
           }
+
+          return true
         }),
       )
+      const processedFileCount = processedFiles.filter(Boolean).length
 
       if (shouldLogSummary(logLevel)) {
-        console.info(`[vite-beasties-output] Processed ${htmlFiles.length} HTML ${pluralizeFiles(htmlFiles.length)}`)
+        console.info(
+          `[vite-beasties-output] Processed ${processedFileCount} HTML ${pluralizeFiles(processedFileCount)}`,
+        )
       }
     },
   }

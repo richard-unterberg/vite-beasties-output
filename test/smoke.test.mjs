@@ -195,6 +195,61 @@ test('does not log processed HTML count when Beasties logging is silent', async 
   assert.deepEqual(logs, [])
 })
 
+test('skips HTML without Beasties containers when explicit container mode is enabled', async () => {
+  const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'vite-beasties-output-'))
+  const outputDirectory = path.join(temporaryDirectory, 'dist')
+
+  await fs.cp(path.join(fixtureDirectory, 'client'), outputDirectory, { recursive: true })
+
+  const htmlPath = path.join(outputDirectory, 'index.html')
+  const sourceHtml = await fs.readFile(htmlPath, 'utf8')
+  assertUnprocessedFixtureHtml(sourceHtml)
+  const config = {
+    root: temporaryDirectory,
+    base: '/',
+    build: {
+      outDir: 'dist',
+    },
+  }
+
+  const logs = await captureInfoLogs(async () => {
+    await runPlugin({ explicitContainersOnly: true }, config)
+  })
+
+  const processedHtml = await fs.readFile(htmlPath, 'utf8')
+
+  assert.equal(processedHtml, sourceHtml)
+  assert.deepEqual(logs, ['[vite-beasties-output] Processed 0 HTML files'])
+})
+
+test('processes HTML with Beasties containers when explicit container mode is enabled', async () => {
+  const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'vite-beasties-output-'))
+  const outputDirectory = path.join(temporaryDirectory, 'dist')
+
+  await fs.cp(path.join(fixtureDirectory, 'client'), outputDirectory, { recursive: true })
+
+  const htmlPath = path.join(outputDirectory, 'index.html')
+  const fixtureHtml = await fs.readFile(htmlPath, 'utf8')
+  assertUnprocessedFixtureHtml(fixtureHtml)
+  const sourceHtml = fixtureHtml.replace('<div id="root"', '<div data-beasties-container id="root"')
+  await fs.writeFile(htmlPath, sourceHtml)
+
+  const config = {
+    root: temporaryDirectory,
+    base: '/',
+    build: {
+      outDir: 'dist',
+    },
+  }
+
+  await runPlugin({ explicitContainersOnly: true }, config)
+
+  const processedHtml = await fs.readFile(htmlPath, 'utf8')
+
+  assertProcessedHtml(processedHtml, sourceHtml)
+  assert.match(processedHtml, /<div data-beasties-container id="root"/)
+})
+
 test('removes Beasties container marker from html while preserving custom containers', async () => {
   const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'vite-beasties-output-'))
   const outputDirectory = path.join(temporaryDirectory, 'dist')

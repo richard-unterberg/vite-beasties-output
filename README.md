@@ -101,6 +101,18 @@ viteBeastiesOutput({
 
 When `include` is set, the plugin only processes matched `.html` files. If `outputDirectory` is also set, Beasties resolves linked CSS from that directory. If `outputDirectory` is omitted, the plugin infers the Beasties root from the include path or glob base.
 
+### `explicitContainersOnly`
+
+When `true`, the plugin only processes HTML files that already contain `data-beasties-container`. Files without an explicit container are left unchanged, which prevents Beasties from falling back to its default whole-document critical CSS pass.
+
+```ts
+viteBeastiesOutput({
+  explicitContainersOnly: true,
+})
+```
+
+This is useful when you want critical CSS extraction to be opt-in per page or per region. The default is `false`, matching Beasties' normal behavior.
+
 ### `beastiesOptions`
 
 Pass supported [Beasties options](https://github.com/danielroe/beasties#options). The plugin controls `path` and `publicPath` internally based on `outputDirectory` and Vite's resolved `base`.
@@ -204,7 +216,7 @@ Supporting runtime SSR critical CSS would require integrating Beasties, or preco
 The plugin runs after your Vite build completes. It:
 
 1. Finds HTML files from `include`, or scans the configured output directory recursively for `.html` files
-2. For each HTML file, processes it through Beasties to extract and inline critical CSS
+2. For each HTML file, processes it through Beasties to extract and inline critical CSS, unless `explicitContainersOnly` is enabled and the file has no `data-beasties-container`
 3. Writes the optimized HTML back to disk
 4. Logs the number of HTML files processed when `beastiesOptions.logLevel` is not `silent`
 
@@ -214,6 +226,7 @@ The plugin runs after your Vite build completes. It:
 * **No direct runtime SSR injection**: SSR responses rendered at request time are not modified.
 * **Output root must match public paths**: Absolute stylesheet URLs are resolved from `outputDirectory`, or from the inferred `include` base when `outputDirectory` is omitted, using Vite's configured `base`.
 * **Beasties path control**: Beasties `path` and `publicPath` are controlled by the plugin based on `outputDirectory` and Vite's resolved config.
+* **Explicit container mode**: Set `explicitContainersOnly: true` when unmarked HTML should be skipped instead of letting Beasties evaluate the whole document.
 * **Inline style preservation**: Existing inline `<style>` tags are preserved by default to avoid mutating framework-rendered HTML before hydration. Set `beastiesOptions.reduceInlineStyles: true` if you explicitly want Beasties to process and merge inline styles.
 * **Tailwind child spacing**: Tailwind emits `space-x-*` and `space-y-*` utilities as `:where(...)` child selectors that Beasties' fast selector matcher can miss. The plugin includes a narrow default `allowRules` pattern for those utilities and merges user `allowRules` after it.
 * **Multiple Beasties containers**: Beasties evaluates only the first `data-beasties-container` it finds. When multiple containers are present, the plugin temporarily promotes `<body>` as the processing container so all marked critical regions can contribute CSS, then removes that plugin-added body marker from final HTML.
