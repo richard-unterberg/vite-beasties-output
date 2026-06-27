@@ -45,6 +45,8 @@ const DEFAULT_BEASTIES_OPTIONS: SafeBeastiesOptions = {
   logLevel: 'warn',
 }
 
+const DEFAULT_ALLOW_RULES: Array<string | RegExp> = [/^:where\(\.(?:[^ >+~)]*\\:)*-?space-[xy]-/]
+
 const shouldLogSummary = (logLevel: LogLevel | undefined) => {
   return (logLevel ?? DEFAULT_BEASTIES_OPTIONS.logLevel) !== 'silent'
 }
@@ -277,8 +279,28 @@ const resolveHtmlFiles = async (
   return collectHtmlFiles(resolveOutputDirectory(config, outputDirectory))
 }
 
+const BODY_TAG_PATTERN = /<body\b[^>]*>/i
+const BODY_BEASTIES_CONTAINER_PATTERN = /<body\b[^>]*\sdata-beasties-container(?:=(?:"[^"]*"|'[^']*'|[^\s>]+))?[^>]*>/i
+const BEASTIES_CONTAINER_ATTRIBUTE_PATTERN = /\sdata-beasties-container(?:=(?:"[^"]*"|'[^']*'|[^\s>]+))?(?=[\s>])/gi
+
+const countBeastiesContainerAttributes = (html: string) => {
+  return [...html.matchAll(BEASTIES_CONTAINER_ATTRIBUTE_PATTERN)].length
+}
+
+const ensureSingleBeastiesContainerRoot = (html: string) => {
+  if (countBeastiesContainerAttributes(html) < 2 || BODY_BEASTIES_CONTAINER_PATTERN.test(html)) {
+    return html
+  }
+
+  return html.replace(BODY_TAG_PATTERN, (bodyTag) => bodyTag.replace(/>$/, ' data-beasties-container>'))
+}
+
+const removeBodyBeastiesContainerAttribute = (html: string) => {
+  return html.replace(BODY_TAG_PATTERN, (bodyTag) => bodyTag.replace(BEASTIES_CONTAINER_ATTRIBUTE_PATTERN, ''))
+}
+
 const removeHtmlBeastiesContainerAttribute = (html: string) => {
-  return html.replace(/(<html\b[^>]*)\sdata-beasties-container(?=[\s>])/i, '$1')
+  return html.replace(/(<html\b[^>]*)\sdata-beasties-container(?:=(?:"[^"]*"|'[^']*'|[^\s>]+))?(?=[\s>])/i, '$1')
 }
 
 export const viteBeastiesOutput = (pluginOptions: ViteBeastiesOutputOptions = {}): Plugin => {
@@ -321,6 +343,7 @@ export const viteBeastiesOutput = (pluginOptions: ViteBeastiesOutputOptions = {}
       const beasties = new Beasties({
         ...DEFAULT_BEASTIES_OPTIONS,
         ...pluginOptions.beastiesOptions,
+        allowRules: [...DEFAULT_ALLOW_RULES, ...(pluginOptions.beastiesOptions?.allowRules ?? [])],
         path: beastiesPath,
         publicPath: currentResolvedConfig.base,
       } as unknown as ConstructorParameters<typeof Beasties>[0])
@@ -328,7 +351,14 @@ export const viteBeastiesOutput = (pluginOptions: ViteBeastiesOutputOptions = {}
       await Promise.all(
         htmlFiles.map(async (htmlFile) => {
           const html = await fs.readFile(htmlFile, 'utf8')
-          const processedHtml = removeHtmlBeastiesContainerAttribute(await beasties.process(html))
+          const shouldPromoteBodyContainer =
+            countBeastiesContainerAttributes(html) > 1 && !BODY_BEASTIES_CONTAINER_PATTERN.test(html)
+          const htmlForBeasties = shouldPromoteBodyContainer ? ensureSingleBeastiesContainerRoot(html) : html
+          const processedHtml = removeHtmlBeastiesContainerAttribute(
+            shouldPromoteBodyContainer
+              ? removeBodyBeastiesContainerAttribute(await beasties.process(htmlForBeasties))
+              : await beasties.process(htmlForBeasties),
+          )
 
           if (processedHtml !== html) {
             await fs.writeFile(htmlFile, processedHtml)

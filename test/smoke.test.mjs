@@ -226,6 +226,74 @@ test('removes Beasties container marker from html while preserving custom contai
   assert.match(processedHtml, /<div data-beasties-container id="root"/)
 })
 
+test('inlines critical CSS from multiple Beasties containers', async () => {
+  const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'vite-beasties-output-'))
+  const outputDirectory = path.join(temporaryDirectory, 'dist')
+  const assetsDirectory = path.join(outputDirectory, 'assets')
+
+  await fs.mkdir(assetsDirectory, { recursive: true })
+  await fs.writeFile(
+    path.join(outputDirectory, 'index.html'),
+    `<!doctype html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" href="/assets/app.css">
+  </head>
+  <body>
+    <header data-beasties-container="true">
+      <nav class="critical-first">
+        <ul class="space-x-4">
+          <li></li>
+          <li></li>
+        </ul>
+      </nav>
+    </header>
+    <main data-beasties-container="true">
+      <h1 class="critical-second"></h1>
+    </main>
+  </body>
+</html>`,
+  )
+  await fs.writeFile(
+    path.join(assetsDirectory, 'app.css'),
+    `.critical-first {
+  color: #123456;
+}
+
+.critical-second {
+  color: #abcdef;
+}
+
+:where(.space-x-4 > :not(:last-child)) {
+  margin-inline-end: 1rem;
+}
+
+.non-critical {
+  color: #fedcba;
+}
+`,
+  )
+
+  const config = {
+    root: temporaryDirectory,
+    base: '/',
+    build: {
+      outDir: 'dist',
+    },
+  }
+
+  await runPlugin(undefined, config)
+
+  const processedHtml = await fs.readFile(path.join(outputDirectory, 'index.html'), 'utf8')
+
+  assert.match(processedHtml, /\.critical-first/)
+  assert.match(processedHtml, /\.critical-second/)
+  assert.match(processedHtml, /\.space-x-4/)
+  assert.doesNotMatch(processedHtml, /<body[^>]*\sdata-beasties-container(?:\s|>)/i)
+  assert.match(processedHtml, /<header data-beasties-container="true">/)
+  assert.match(processedHtml, /<main data-beasties-container="true">/)
+})
+
 test('preserves inline body styles by default', async () => {
   const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'vite-beasties-output-'))
   const outputDirectory = path.join(temporaryDirectory, 'dist')

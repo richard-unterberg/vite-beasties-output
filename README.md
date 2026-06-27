@@ -113,6 +113,7 @@ viteBeastiesOutput({
     logLevel: 'warn',       // 'info' | 'warn' | 'error' | 'trace' | 'debug' | 'silent'
     pruneSource: false,     // Do not remove source CSS files
     reduceInlineStyles: false, // Preserve inline <style> tags rendered by the app/framework
+    allowRules: [],         // Merged after the plugin's narrow Tailwind spacing defaults
     inlineFonts: false,     // Do not inline @font-face rules
     keyframes: 'critical',  // 'critical' | 'all' | 'none'
   },
@@ -128,6 +129,9 @@ The plugin ships with sensible defaults:
   preload: 'swap',
   pruneSource: false,
   reduceInlineStyles: false,
+  allowRules: [
+    /^:where\(\.(?:[^ >+~)]*\\:)*-?space-[xy]-/,
+  ],
   compress: true,
   logLevel: 'warn',
 }
@@ -211,6 +215,8 @@ The plugin runs after your Vite build completes. It:
 * **Output root must match public paths**: Absolute stylesheet URLs are resolved from `outputDirectory`, or from the inferred `include` base when `outputDirectory` is omitted, using Vite's configured `base`.
 * **Beasties path control**: Beasties `path` and `publicPath` are controlled by the plugin based on `outputDirectory` and Vite's resolved config.
 * **Inline style preservation**: Existing inline `<style>` tags are preserved by default to avoid mutating framework-rendered HTML before hydration. Set `beastiesOptions.reduceInlineStyles: true` if you explicitly want Beasties to process and merge inline styles.
+* **Tailwind child spacing**: Tailwind emits `space-x-*` and `space-y-*` utilities as `:where(...)` child selectors that Beasties' fast selector matcher can miss. The plugin includes a narrow default `allowRules` pattern for those utilities and merges user `allowRules` after it.
+* **Multiple Beasties containers**: Beasties evaluates only the first `data-beasties-container` it finds. When multiple containers are present, the plugin temporarily promotes `<body>` as the processing container so all marked critical regions can contribute CSS, then removes that plugin-added body marker from final HTML.
 * **Beasties owns CSS selection**: The plugin does not add extra CSS parsing or framework-specific rule preservation. Use Beasties options such as `allowRules` or CSS comments like `/* beasties:include */` when a project needs explicit rule inclusion.
 
 ## Troubleshooting
@@ -218,6 +224,8 @@ The plugin runs after your Vite build completes. It:
 ### Expected rules are missing from critical CSS
 
 Use Beasties' native include mechanisms for rules that cannot be discovered from the generated HTML. For DaisyUI or theme variables, see [DaisyUI and theme variables](#daisyui-and-theme-variables).
+
+If you use multiple `data-beasties-container` regions, make sure you are on a plugin version that includes multiple-container normalization. Beasties itself only evaluates the first container.
 
 ### Plugin not running
 

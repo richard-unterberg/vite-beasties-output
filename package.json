@@ -1,6 +1,6 @@
 {
   "name": "@unterberg/vite-beasties-output",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "Post-build vite plugin that runs beasties against already generated HTML output.",
   "type": "module",
   "sideEffects": false,
