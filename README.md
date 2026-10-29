@@ -9,7 +9,7 @@ That makes it suitable for SSG, prerendered, or otherwise statically emitted HTM
 ## What it does
 
 * Runs only during `build`
-* Runs late with `enforce: 'post'`
+* Runs in `closeBundle` for standalone Vite builds, or after prerendering in `buildApp` for app builds
 * Scans generated `.html` files from the configured output directory, or processes explicit `include` paths/globs
 * Processes each HTML file with Beasties
 * Writes optimized HTML back to disk
@@ -50,7 +50,7 @@ viteBeastiesOutput({
 
 For SSR-only Vike builds without prerendering, the server output usually contains runtime modules such as `page_*.mjs` files instead of final `.html` files. This plugin does not modify those runtime SSR modules and therefore cannot inline critical CSS into SSR responses by itself.
 
-Vike full builds can invoke Vite more than once. In that case, you may see an early `Processed 0 HTML files` message during the client build before Vike has prerendered any HTML, followed by a later message after the prerendered HTML files exist.
+Vike full builds create client and server bundles before prerendering HTML. For app builds with Vite's `builder` configured, the plugin waits for the `buildApp` post hook instead of processing each environment in `closeBundle`. With current Vike versions, this runs after prerendering and before Vike finalizes the CLI, logging one final processed-file count. Keep the plugin after `vike()` in the plugins array.
 
 If `outputDirectory` is omitted, the plugin uses Vite's `build.outDir`.
 
@@ -81,7 +81,7 @@ viteBeastiesOutput({
 
 When omitted, this defaults to Vite's `build.outDir`.
 
-In Vike prerender projects, this is often not enough because the build may involve separate client and server output directories. In that case, point `outputDirectory` directly at the directory containing the generated `.html` files, usually `dist/client`.
+For app builds, this defaults to the client environment's `build.outDir`. You can still set `outputDirectory` explicitly when HTML is emitted elsewhere, usually `dist/client` in Vike projects.
 
 ### `include`
 
@@ -187,7 +187,7 @@ This plugin does not inject critical CSS into runtime SSR responses. It only pro
 | ------------------------------ | --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | Main purpose                   | Generic Vite integration for Beasties                                                               | Post-build processing for already emitted HTML files                  |
 | Best suited for                | Standard Vite apps using Vite’s HTML pipeline                                                       | SSG, prerendered, or statically emitted HTML output                   |
-| Build hook                     | `transformIndexHtml`                                                                                | `closeBundle`                                                         |
+| Build hook                     | `transformIndexHtml`                                                                                | `closeBundle`, or `buildApp` after app prerendering                      |
 | When it runs                   | During Vite’s HTML transformation                                                                   | After the build output has been written                               |
 | HTML source                    | HTML passed through Vite’s HTML transform pipeline                                                  | `.html` files found in the configured output directory                |
 | Output handling                | Returns transformed HTML to Vite                                                                    | Writes optimized HTML files back to disk                              |
@@ -210,7 +210,7 @@ Supporting runtime SSR critical CSS would require integrating Beasties, or preco
 
 ## How it works
 
-The plugin runs after your Vite build completes. It:
+The plugin runs in `closeBundle` for standalone builds. For app builds with Vite's `builder` configured, it skips individual environment closures and runs in the `buildApp` post hook, using the client environment's output directory by default. It:
 
 1. Finds HTML files from `include`, or scans the configured output directory recursively for `.html` files
 2. For each HTML file, processes it through Beasties to extract and inline critical CSS, unless `explicitContainersOnly` is enabled and the file has no `data-beasties-container`
@@ -245,7 +245,7 @@ Verify:
 * `outputDirectory` points at the generated HTML output root
 * Your build actually emits `.html` files
 
-For Vike prerender builds, an early `Processed 0 HTML files` log can be normal because Vike writes prerendered HTML after the first Vite build phase. Check the final log message and the generated `dist/client/**/*.html` files.
+For Vike prerender builds, the processed-file count should appear after Vike's prerendering output. If you only see `Processed 0 HTML files` before prerendering, update the plugin: older versions only used `closeBundle`, which runs before Vike emits HTML.
 
 ### Processed 0 HTML files
 

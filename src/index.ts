@@ -302,81 +302,90 @@ const removeHtmlBeastiesContainerAttribute = (html: string) => {
   return html.replace(/(<html\b[^>]*)\sdata-beasties-container(?:=(?:"[^"]*"|'[^']*'|[^\s>]+))?(?=[\s>])/i, '$1')
 }
 
+const processHtmlOutput = async (config: ResolvedConfig, pluginOptions: ViteBeastiesOutputOptions) => {
+  const beastiesPath = await resolveBeastiesPath(config, pluginOptions.outputDirectory, pluginOptions.include)
+  const htmlFiles = await resolveHtmlFiles(config, pluginOptions.outputDirectory, pluginOptions.include)
+  const logLevel = pluginOptions.beastiesOptions?.logLevel ?? DEFAULT_BEASTIES_OPTIONS.logLevel
+
+  if (htmlFiles.length === 0) {
+    if (shouldLogSummary(logLevel)) {
+      console.info('[vite-beasties-output] Processed 0 HTML files')
+    }
+
+    return
+  }
+
+  const beasties = new Beasties({
+    ...DEFAULT_BEASTIES_OPTIONS,
+    ...pluginOptions.beastiesOptions,
+    path: beastiesPath,
+    publicPath: config.base,
+  } as unknown as ConstructorParameters<typeof Beasties>[0])
+
+  const processedFiles = await Promise.all(
+    htmlFiles.map(async (htmlFile) => {
+      const html = await fs.readFile(htmlFile, 'utf8')
+      const beastiesContainerCount = countBeastiesContainerAttributes(html)
+
+      if (pluginOptions.explicitContainersOnly && beastiesContainerCount === 0) {
+        return false
+      }
+
+      const shouldPromoteBodyContainer = beastiesContainerCount > 1 && !BODY_BEASTIES_CONTAINER_PATTERN.test(html)
+      const htmlForBeasties = shouldPromoteBodyContainer ? ensureSingleBeastiesContainerRoot(html) : html
+      const processedHtml = removeHtmlBeastiesContainerAttribute(
+        shouldPromoteBodyContainer
+          ? removeBodyBeastiesContainerAttribute(await beasties.process(htmlForBeasties))
+          : await beasties.process(htmlForBeasties),
+      )
+
+      if (processedHtml !== html) {
+        await fs.writeFile(htmlFile, processedHtml)
+      }
+
+      return true
+    }),
+  )
+  const processedFileCount = processedFiles.filter(Boolean).length
+
+  if (shouldLogSummary(logLevel)) {
+    console.info(`[vite-beasties-output] Processed ${processedFileCount} HTML ${pluralizeFiles(processedFileCount)}`)
+  }
+}
+
 export const viteBeastiesOutput = (pluginOptions: ViteBeastiesOutputOptions = {}): Plugin => {
   let resolvedConfig: ResolvedConfig | undefined
 
   return {
     name: 'vite-beasties-output',
     apply: 'build',
-    enforce: 'post',
     configResolved: (config) => {
       resolvedConfig = config
     },
-    async closeBundle() {
-      if (!resolvedConfig) {
-        return
-      }
-
-      const currentResolvedConfig = resolvedConfig
-
-      const beastiesPath = await resolveBeastiesPath(
-        currentResolvedConfig,
-        pluginOptions.outputDirectory,
-        pluginOptions.include,
-      )
-      const htmlFiles = await resolveHtmlFiles(
-        currentResolvedConfig,
-        pluginOptions.outputDirectory,
-        pluginOptions.include,
-      )
-      const logLevel = pluginOptions.beastiesOptions?.logLevel ?? DEFAULT_BEASTIES_OPTIONS.logLevel
-
-      if (htmlFiles.length === 0) {
-        if (shouldLogSummary(logLevel)) {
-          console.info('[vite-beasties-output] Processed 0 HTML files')
+    closeBundle: {
+      order: 'post',
+      sequential: true,
+      async handler() {
+        // App builds emit HTML after the individual environment bundles have closed.
+        if (!resolvedConfig || resolvedConfig.builder) {
+          return
         }
 
-        return
-      }
+        await processHtmlOutput(resolvedConfig, pluginOptions)
+      },
+    },
+    buildApp: {
+      order: 'post',
+      async handler(builder) {
+        if (!builder.config.builder) {
+          return
+        }
 
-      const beasties = new Beasties({
-        ...DEFAULT_BEASTIES_OPTIONS,
-        ...pluginOptions.beastiesOptions,
-        path: beastiesPath,
-        publicPath: currentResolvedConfig.base,
-      } as unknown as ConstructorParameters<typeof Beasties>[0])
-
-      const processedFiles = await Promise.all(
-        htmlFiles.map(async (htmlFile) => {
-          const html = await fs.readFile(htmlFile, 'utf8')
-          const beastiesContainerCount = countBeastiesContainerAttributes(html)
-
-          if (pluginOptions.explicitContainersOnly && beastiesContainerCount === 0) {
-            return false
-          }
-
-          const shouldPromoteBodyContainer = beastiesContainerCount > 1 && !BODY_BEASTIES_CONTAINER_PATTERN.test(html)
-          const htmlForBeasties = shouldPromoteBodyContainer ? ensureSingleBeastiesContainerRoot(html) : html
-          const processedHtml = removeHtmlBeastiesContainerAttribute(
-            shouldPromoteBodyContainer
-              ? removeBodyBeastiesContainerAttribute(await beasties.process(htmlForBeasties))
-              : await beasties.process(htmlForBeasties),
-          )
-
-          if (processedHtml !== html) {
-            await fs.writeFile(htmlFile, processedHtml)
-          }
-
-          return true
-        }),
-      )
-      const processedFileCount = processedFiles.filter(Boolean).length
-
-      if (shouldLogSummary(logLevel)) {
-        console.info(
-          `[vite-beasties-output] Processed ${processedFileCount} HTML ${pluralizeFiles(processedFileCount)}`,
-        )
-      }
+        // Use normal plugin ordering: Vike prerenders in an enforce:'pre' plugin
+        // and can force-exit the CLI in an enforce:'post' plugin.
+        const clientConfig = builder.environments.client?.config ?? builder.config
+        await processHtmlOutput(clientConfig, pluginOptions)
+      },
     },
   }
 }

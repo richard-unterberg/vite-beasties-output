@@ -15,7 +15,11 @@
 ### Plugin Lifecycle
 
 1. **configResolved**: Stores resolved Vite config for later use
-2. **closeBundle**: Runs after all assets are built (Vite's post-build hook)
+2. **closeBundle / buildApp**: Standalone builds process HTML in `closeBundle`.
+   App builds with Vite's `builder` configured skip environment-level closures
+   and process HTML in the `buildApp` post hook after Vike prerendering and
+   before Vike's CLI finalization. The plugin uses normal plugin ordering and
+   the client environment's config (or the builder config if no client exists).
    - Resolves the configured output directory, defaulting to Vite's `build.outDir`
    - Scans the output directory recursively for `.html` files
    - For each HTML file:
@@ -56,6 +60,13 @@ Node built-in test runner. Single test verifies:
 - Beasties processes HTML (output differs from input)
 - No framework-specific theme marker is injected
 - Fixture class hooks remain preserved
+
+### [test/build.test.mjs](test/build.test.mjs)
+
+Real Vite builds verify that app builds process root and nested HTML emitted
+after client/server bundles close, preserve include filtering, use the client
+output directory by default, finish before app finalization, and log one final count. A standalone Vite HTML
+build verifies the `closeBundle` path.
 
 ### [test/fixture/vike-output/](test/fixture/vike-output/)
 

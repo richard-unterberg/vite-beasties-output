@@ -29,7 +29,7 @@ const runPlugin = async (pluginOptions, config) => {
   const plugin = viteBeastiesOutput(pluginOptions)
 
   plugin.configResolved?.(config)
-  await plugin.closeBundle.call({})
+  await plugin.closeBundle.handler.call({})
 }
 
 const captureInfoLogs = async (callback) => {
