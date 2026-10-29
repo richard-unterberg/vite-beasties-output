@@ -1,7 +1,7 @@
 {
   "name": "@unterberg/vite-beasties-output",
-  "version": "0.1.17",
-  "description": "Post-build vite plugin that runs beasties against already generated HTML output.",
+  "version": "0.2.0",
+  "description": "Post-build vite / astro plugin that runs beasties against already generated HTML output.",
   "type": "module",
   "sideEffects": false,
   "files": [
@@ -13,12 +13,16 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./astro": {
+      "types": "./dist/astro.d.ts",
+      "import": "./dist/astro.js"
     }
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --clean --target node18",
+    "build": "tsup src/index.ts src/astro.ts --format esm --dts --clean --target node18",
     "test": "pnpm run build && node --test test/*.test.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "biome lint --write .",
@@ -32,6 +36,7 @@
     "vite",
     "vite-plugin",
     "vike",
+    "astro",
     "beasties",
     "critical-css",
     "ssg"
@@ -41,7 +46,13 @@
     "beasties": "latest"
   },
   "peerDependencies": {
+    "astro": ">=5",
     "vite": ">=6"
+  },
+  "peerDependenciesMeta": {
+    "astro": {
+      "optional": true
+    }
   },
   "engines": {
     "node": ">=22"
@@ -49,10 +60,11 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.1",
     "@types/node": "26.0.0",
+    "astro": "^7.4.4",
     "knip": "^6.18.0",
     "lefthook": "^2.1.9",
     "tsup": "^8.5.1",
-    "vite": "^8.1.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vite": "^8.1.0"
   }
 }

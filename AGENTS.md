@@ -25,6 +25,11 @@
    - For each HTML file:
      - Processes HTML through Beasties with user-provided options merged with defaults
      - Writes modified HTML back to disk
+3. **Astro integration**: The separate `/astro` entry exports
+   `astroBeastiesOutput` for Astro's `integrations` array. It processes HTML in
+   `astro:build:done`, using the hook's actual client output directory and
+   Astro's resolved root and base. Astro generates HTML after the Vite hooks,
+   so using the Vite plugin in Astro's `vite.plugins` runs too early.
 
 ### Output Layout Assumption
 
@@ -50,7 +55,20 @@ dist/
 - `viteBeastiesOutputPlugin`: Alias for backward compat (may be removed in v1)
 - `ViteBeastiesOutputOptions`: User-facing plugin options interface (`outputDirectory`, `beastiesOptions`)
 - `SafeBeastiesOptions`: Curated Beasties options safe for passthrough (excludes path, publicPath, remote, etc.)
-- Helper functions: `collectHtmlFiles`, `resolveOutputDirectory`
+- Shared HTML processing, file discovery, and option types live in
+  [src/output.ts](src/output.ts). Both framework adapters use this module.
+
+### [src/astro.ts](src/astro.ts)
+
+Astro adapter with type-only Astro imports, built as the separate `/astro`
+package export. Astro is an optional peer, so Vite consumers do not need it.
+
+### [test/astro.test.mjs](test/astro.test.mjs)
+
+Real Astro builds verify root and nested static pages, custom output and base,
+include filtering, explicit containers, and prerendered server output. They
+also verify that processing finishes before subsequent `astro:build:done`
+hooks, preserves inline styles and source CSS, and logs one final count.
 
 ### [test/smoke.test.mjs](test/smoke.test.mjs)
 
@@ -80,7 +98,7 @@ Minimal but realistic test fixture:
 **Exportable npm package** with:
 - ESM-only entry point: `dist/index.js`
 - TypeScript declarations: `dist/index.d.ts`
-- Build: `tsup src/index.ts --format esm --dts --clean --target node22`
+- Build: `tsup src/index.ts src/astro.ts --format esm --dts --clean --target node18`
 - Runtime dep: `beasties` (latest)
 - Peer dep: `vite` (>=6)
 - Dev tools: `@biomejs/biome`, `knip`, `lefthook`, `typescript`

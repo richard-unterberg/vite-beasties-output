@@ -1,6 +1,6 @@
 # vite-beasties-output
 
-Post-build Vite plugin that runs [Beasties](https://github.com/danielroe/beasties) against already generated HTML output.
+Post-build Vite plugin that runs [Beasties](https://github.com/danielroe/beasties) against already generated HTML output. For Vite and Astro projects.
 
 Small post-build adapter around Beasties. It focuses on processing emitted HTML files on disk rather than participating in Vite’s in-pipeline HTML transformation.
 
@@ -53,6 +53,43 @@ For SSR-only Vike builds without prerendering, the server output usually contain
 Vike full builds create client and server bundles before prerendering HTML. For app builds with Vite's `builder` configured, the plugin waits for the `buildApp` post hook instead of processing each environment in `closeBundle`. With current Vike versions, this runs after prerendering and before Vike finalizes the CLI, logging one final processed-file count. Keep the plugin after `vike()` in the plugins array.
 
 If `outputDirectory` is omitted, the plugin uses Vite's `build.outDir`.
+
+## Astro
+
+Use the Astro integration in `integrations` in your `astro.config.ts`:
+
+```ts
+import { defineConfig } from 'astro/config'
+import { astroBeastiesOutput } from '@unterberg/vite-beasties-output/astro'
+
+export default defineConfig({
+  integrations: [
+    astroBeastiesOutput({
+      beastiesOptions: {
+        // Pass the same Beasties options as with the Vite plugin.
+      },
+    }),
+  ],
+})
+```
+
+Astro generates its HTML after the Vite build hooks used by the Vite plugin. The integration processes the final HTML in [`astro:build:done`](https://docs.astro.build/en/reference/integrations-reference/#astrobuilddone). Register it once in `integrations`; remove `viteBeastiesOutput` or `viteBeastiesOutputPlugin` from `vite.plugins`.
+
+The integration automatically uses Astro's actual client output directory and `base`, including custom `outDir` and prerendered pages in server builds. You usually do not need `outputDirectory` or `include`. Pages rendered on demand at request time are not processed.
+
+All options below are supported. Relative `outputDirectory` and `include` paths resolve from Astro's project root. In Astro, the CSS root defaults to the actual client output directory even when `include` selects only nested pages:
+
+```ts
+astroBeastiesOutput({
+  include: ['dist/docs/**/*.html'],
+  explicitContainersOnly: true,
+  beastiesOptions: {
+    allowRules: [/data-theme=.*dark/, /data-theme=.*light/],
+  },
+})
+```
+
+Place this integration before any integration that uploads or packages the final HTML in its own `astro:build:done` hook.
 
 ## Output directory
 
@@ -246,6 +283,8 @@ Verify:
 * Your build actually emits `.html` files
 
 For Vike prerender builds, the processed-file count should appear after Vike's prerendering output. If you only see `Processed 0 HTML files` before prerendering, update the plugin: older versions only used `closeBundle`, which runs before Vike emits HTML.
+
+For Astro builds, use `astroBeastiesOutput` in `integrations` as shown [above](#astro). Adding the Vite plugin to `vite.plugins` runs too early, before Astro generates HTML.
 
 ### Processed 0 HTML files
 

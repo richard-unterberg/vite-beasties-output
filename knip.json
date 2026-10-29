@@ -1,5 +1,6 @@
 {
   "$schema": "./node_modules/knip/schema.json",
+  "entry": ["src/index.ts", "src/astro.ts"],
   "exclude": ["duplicates"],
   "ignore": [],
   "ignoreDependencies": []
